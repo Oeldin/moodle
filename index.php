@@ -88,6 +88,11 @@ if (get_home_page() != HOMEPAGE_SITE) {
     }
 }
 
+//move homepage to base site if user sets the setting to do so
+if($CFG->redirecthomepagetobasesite){
+    redirect('/');
+}
+
 // Trigger event.
 course_view(context_course::instance(SITEID));
 

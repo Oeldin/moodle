@@ -670,6 +670,10 @@ class manager {
             error_log('Cannot terminate session properly - headers were already sent in file: '.$file.' on line '.$line);
         }
 
+        //Remove Motes session cookies
+        setcookie('username', 0,time() - 3600, '/');
+        setcookie('key',0, time() - 3600, '/');
+
         // Write new empty session and make sure the old one is deleted.
         $sid = session_id();
         session_regenerate_id(true);
