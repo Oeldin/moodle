@@ -1288,8 +1288,8 @@ class global_navigation extends navigation_node {
                 $this->rootnodes['home']->showinflatnavigation = true;
             }
         } else {
-            // The home element should be the site because the root node is my moodle
-            $this->rootnodes['home'] = $this->add(get_string('sitehome'), new moodle_url('/'),
+            // The home element should be the site because the root node is my moodle. Homepage redirects to Motes now.
+            $this->rootnodes['home'] = $this->add("Back to Motes", new moodle_url('/'),
                 self::TYPE_SETTING, null, 'home', new pix_icon('i/home', ''));
             $this->rootnodes['home']->showinflatnavigation = true;
             if (!empty($CFG->defaulthomepage) && ($CFG->defaulthomepage == HOMEPAGE_MY)) {
