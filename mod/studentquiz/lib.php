@@ -124,7 +124,7 @@ function studentquiz_add_instance(stdClass $studentquiz, mod_studentquiz_mod_for
     // Leverage add capabilities to add questions in StudentQuiz context.
     mod_studentquiz_ensure_question_capabilities($context);
 
-    // early update context in database so default categories know where the instance can be found
+    // Early update context in database so default categories know where the instance can be found.
     $DB->set_field('course_modules', 'instance', $studentquiz->id, array('id' => $context->instanceid));
 
     // Add default module context question category.
@@ -176,6 +176,23 @@ function studentquiz_update_instance(stdClass $studentquiz, mod_studentquiz_mod_
 
     if (!isset($studentquiz->commentdeletionperiod)) {
         $studentquiz->commentdeletionperiod = get_config('studentquiz', 'commentediting_deletionperiod');
+    }
+
+    $currentdata = $DB->get_record('studentquiz', ['id' => $studentquiz->instance]);
+    if ($currentdata->digesttype != $studentquiz->digesttype) {
+        $params = [
+                'objectid' => $currentdata->coursemodule,
+                'context' => context_module::instance($currentdata->coursemodule),
+                'other' => [
+                        'olddigesttype' => $currentdata->digesttype,
+                        'newdigesttype' => $studentquiz->digesttype
+                ]
+        ];
+        if ($currentdata->digesttype == 2) {
+            $params['other']['olddigestfirstday'] = $currentdata->digestfirstday;
+        }
+        $event = \mod_studentquiz\event\studentquiz_digest_changed::create($params);
+        $event->trigger();
     }
 
     $result = $DB->update_record('studentquiz', $studentquiz);

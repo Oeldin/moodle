@@ -1,0 +1,1 @@
+rsync -rvzh --exclude=".*" --delete --checksum . dintner:/var/s2/moodle/

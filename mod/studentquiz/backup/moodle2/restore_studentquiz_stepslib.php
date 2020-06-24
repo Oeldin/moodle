@@ -23,6 +23,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_studentquiz\local\studentquiz_helper;
+use mod_studentquiz\utils;
+
 defined('MOODLE_INTERNAL') || die;
 
 /**
@@ -77,17 +80,27 @@ class restore_studentquiz_activity_structure_step extends restore_questions_acti
             '/activity/studentquiz/comments/comment');
         $paths[] = $comment;
 
+        // Restore Comment Histories.
+        $commenthistories = new restore_path_element('comment_history',
+                '/activity/studentquiz/commenthistories/comment');
+        $paths[] = $commenthistories;
+
         // Restore Question meta.
         $question = new restore_path_element('question_meta',
             '/activity/studentquiz/questions/question');
         $paths[] = $question;
+
+        // Restore Notification meta.
+        $notification = new restore_path_element('notification',
+                '/activity/studentquiz/notifications/notification');
+        $paths[] = $notification;
 
         // Return the paths wrapped into standard activity structure.
         return $this->prepare_activity_structure($paths);
     }
 
     /**
-     * Process the given restore path element data
+     * Process the given restore path element data.
      *
      * @param array $data parsed element data
      */
@@ -150,6 +163,11 @@ class restore_studentquiz_activity_structure_step extends restore_questions_acti
         $this->set_mapping('studentquiz', $oldid, $newitemid, true); // Has related files.
     }
 
+    /**
+     * Process attempt data.
+     *
+     * @param array $data parsed element data
+     */
     protected function process_attempt($data) {
         // TODO: attempts can be ignored if progress exists and works flawless.
         $data = (object)$data;
@@ -159,6 +177,11 @@ class restore_studentquiz_activity_structure_step extends restore_questions_acti
         $this->currentattempt = clone($data);
     }
 
+    /**
+     * Process progress data.
+     *
+     * @param array $data parsed element data
+     */
     protected function process_progress($data) {
         global $DB;
         $data = (object)$data;
@@ -168,6 +191,11 @@ class restore_studentquiz_activity_structure_step extends restore_questions_acti
         $DB->insert_record('studentquiz_progress', $data);
     }
 
+    /**
+     * Process rate data.
+     *
+     * @param array $data parsed element data
+     */
     protected function process_rate($data) {
         global $DB;
         $data = (object) $data;
@@ -176,6 +204,11 @@ class restore_studentquiz_activity_structure_step extends restore_questions_acti
         $DB->insert_record('studentquiz_rate', $data);
     }
 
+    /**
+     * Process comment data.
+     *
+     * @param array $data parsed element data
+     */
     protected function process_comment($data) {
         global $DB;
         $data = (object) $data;
@@ -194,10 +227,43 @@ class restore_studentquiz_activity_structure_step extends restore_questions_acti
             }
         }
 
+        if ($data->edited > 0) {
+            $commenthistory = new stdClass();
+            $commenthistory->commentid = $data->id;
+            $commenthistory->content = $data->comment;
+            $commenthistory->userid = $data->edituserid;
+            $commenthistory->action = utils::COMMENT_HISTORY_EDIT;
+            $commenthistory->timemodified = $data->edited;
+            $DB->insert_record('studentquiz_comment_history', $commenthistory);
+
+            $data->status = utils::COMMENT_HISTORY_EDIT;
+            $data->usermodified = $data->edituserid;
+            $data->timemodified = $data->edited;
+        }
+
+        if ($data->deleted > 0) {
+            $commenthistory = new stdClass();
+            $commenthistory->commentid = $data->id;
+            $commenthistory->content = '';
+            $commenthistory->userid = $data->deleteuserid;
+            $commenthistory->action = utils::COMMENT_HISTORY_DELETE;
+            $commenthistory->timemodified = $data->deleted;
+            $DB->insert_record('studentquiz_comment_history', $commenthistory);
+
+            $data->status = utils::COMMENT_HISTORY_DELETE;
+            $data->usermodified = $data->deleteuserid;
+            $data->timemodified = $data->deleted;
+        }
+
         $newid = $DB->insert_record('studentquiz_comment', $data);
         $this->set_mapping('studentquiz_comment', $oldid, $newid, true);
     }
 
+    /**
+     * Process question meta data.
+     *
+     * @param array $data parsed element data
+     */
     protected function process_question_meta($data) {
         global $DB;
 
@@ -221,6 +287,39 @@ class restore_studentquiz_activity_structure_step extends restore_questions_acti
     }
 
     /**
+     * Process comment history data.
+     *
+     * @param array $data parsed element data
+     */
+    protected function process_comment_history($data) {
+        global $DB;
+
+        $data = (object) $data;
+        $data->id = $this->get_mappingid('id', $data->id);
+        $data->commentid = $this->get_mappingid('commentid', $data->commentid);
+        $data->content = $this->get_mappingid('content', $data->content);
+        $data->userid = $this->get_mappingid('userid', $data->userid);
+        $data->action = $this->get_mappingid('action', $data->action);
+        $data->timemodified = $this->get_mappingid('timemodified', $data->timemodified);
+
+        $DB->insert_record('studentquiz_comment_history', $data);
+    }
+
+    /**
+     * Process notification data.
+     *
+     * @param array $data parsed element data
+     */
+    protected function process_notification($data) {
+        global $DB;
+
+        $data = (object) $data;
+        $data->studentquizid = $this->get_mappingid('notification', $data->studentquizid);
+
+        $DB->insert_record('studentquiz_notification', $data);
+    }
+
+    /**
      * Post-execution actions per activity
      */
     protected function after_execute() {
@@ -229,6 +328,11 @@ class restore_studentquiz_activity_structure_step extends restore_questions_acti
     }
 
 
+    /**
+     * Inform the new question usage id.
+     *
+     * @param int $newusageid
+     */
     protected function inform_new_usage_id($newusageid) {
         // TODO: attempts can be ignored if progress exists and works flawless.
         global $DB;
@@ -255,15 +359,15 @@ class restore_studentquiz_activity_structure_step extends restore_questions_acti
         // Migrate progress from quiz usage to internal table.
         mod_studentquiz_migrate_all_studentquiz_instances_to_aggregated_state($this->get_courseid());
         // Workaround setting default question state if no state data is available.
-        // ref: https://tracker.moodle.org/browse/MDL-67406
+        // ref: https://tracker.moodle.org/browse/MDL-67406.
         mod_studentquiz_fix_all_missing_question_state_after_restore($this->get_courseid());
     }
 
     /**
      * Get mapping id or null.
      *
-     * @param $type
-     * @param $oldid
+     * @param string $type field identifier
+     * @param int $oldid the old id of that field
      * @return mixed
      */
     private function get_mappingid_or_null($type, $oldid) {
