@@ -55,7 +55,6 @@ function theme_klass_process_css($css, $theme) {
     }
     $css = theme_klass_set_customcss($css, $customcss);
     $css = theme_klass_pre_css_set_fontwww($css);
-
     return $css;
 }
 
@@ -66,14 +65,14 @@ function theme_klass_process_css($css, $theme) {
  * @param string $logo The URL of the logo.
  * @return string The parsed CSS
  */
-function theme_klass_set_logo($css, $logo) {
-    $tag = '[[setting:logo]]';
+function theme_klass_set_logo($scss, $logo) {
+    $tag = '$logo: ';
     $replacement = $logo;
     if (is_null($replacement)) {
         $replacement = '';
     }
-    $css = str_replace($tag, $replacement, $css);
-    return $css;
+    $scss = str_replace($tag, $replacement, $scss);
+    return $scss;
 }
 
 /**
@@ -284,7 +283,7 @@ if (!function_exists('get_logo_url')) {
             $logo = empty($logo) ? $OUTPUT->image_url('home/logo', 'theme') : $logo;
         } else if ($type == "footer") {
             $logo = $theme->setting_file_url('footerlogo', 'footerlogo');
-            $logo = empty($logo) ? $OUTPUT->image_url('home/footerlogo', 'theme') : $logo;
+            $logo = empty($logo) ? '' : $logo;
         }
         return $logo;
     }
@@ -301,10 +300,12 @@ function theme_klass_render_slideimg($p, $sliname) {
     global $PAGE, $OUTPUT;
     $nos = theme_klass_get_setting('numberofslides');
     $i = $p % 3;
-    $slideimage = $OUTPUT->image_url('home/slide'.$i, 'theme');
-    // Get slide image or fallback to default.
+    $slideimage = '';
     if (theme_klass_get_setting($sliname)) {
         $slideimage = $PAGE->theme->setting_file_url($sliname , $sliname);
+    }
+    if (empty($sliname)) {
+        $slideimage = '';
     }
     return $slideimage;
 }

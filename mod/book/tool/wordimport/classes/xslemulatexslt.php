@@ -15,16 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Atto text editor import Microsoft Word file and convert to HTML
+ * Emulate xslt_create() function if it doesn't exist.
  *
  * @package   booktool_wordimport
- * @copyright 2015 Eoin Campbell
  * @copyright 2005 Ziba Scott
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 
-// This file is copied from moodle/backup/bb/xsl_emulate_xslt.inc.
+// This file is copied from @link https://github.com/moodle/moodle/tree/MOODLE_19_STABLE/backup/bbxsl_emulate_xslt.inc.
 
 // This file adds xslt_xxx emulation functions.
 // It is intended for systems, e.g. those running PHP 5, where:
@@ -34,7 +33,9 @@
 // Note that not everything is implemented.
 // In particular, only the bare minimum to support the BB conversion is here.
 
-// This silliness is required to prevent PHP from evaluating the function() blocks before processing the return;s.
+defined('MOODLE_INTERNAL') || die;
+
+// This silliness is required to prevent PHP from evaluating the function() blocks before processing the return's.
 if (true) {
 
     if (function_exists('xslt_create')) {

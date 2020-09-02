@@ -21,6 +21,7 @@
  * @copyright  2015 LMSACE Dev Team , lmsace.com
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 defined('MOODLE_INTERNAL') || die;
 require_once(__DIR__ . '/lib.php');
 
@@ -30,7 +31,7 @@ $THEME->doctype = 'html5';
 
 $THEME->parents = array('boost');
 
-$THEME->sheets = ['theme', 'custom'];
+$THEME->sheets = ['theme' , 'custom'];
 
 $THEME->javascripts_footer = array('theme');
 

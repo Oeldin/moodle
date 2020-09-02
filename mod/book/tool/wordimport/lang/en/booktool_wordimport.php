@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Microsoft Word file Import/Export';
+$string['pluginname'] = 'Microsoft Word file Import/Export (Book)';
 $string['wordimport:export'] = 'Export Microsoft Word file';
 $string['wordimport:import'] = 'Import Microsoft Word file';
 $string['wordfile'] = 'Microsoft Word file';
@@ -41,7 +41,7 @@ $string['insertionpoint'] = 'Insert before current chapter';
 $string['insertionpoint_help'] = 'Insert content before the current chapter, keeping all existing content';
 $string['replacechapter'] = 'Replace current chapter';
 $string['replacechapter_help'] = 'Replace the content chapter with the first chapter from the file, but keep all other chapters';
-$string['transformationfailed'] = 'XSLT transformation failed (<b>{$a}</b>)';
+$string['transformationfailed'] = 'XSLT transformation failed';
 $string['xsltunavailable'] = 'You need the XSLT library installed in PHP to save this Word file';
 $string['stylesheetunavailable'] = 'XSLT Stylesheet <b>{$a}</b> is not available';
 $string['cannotopentempfile'] = 'Cannot open temporary file <b>{$a}</b>';
