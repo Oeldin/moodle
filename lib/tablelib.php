@@ -1306,8 +1306,7 @@ class flexible_table {
 
             if (array_key_exists($sortby, $sortdata)) {
                 // This key already exists somewhere. Change its sortorder and bring it to the top.
-                //$sortorder = $sortdata[$sortby] = $sortorder;
-                unset($sortdata['sortby'][$sortby]);
+                unset($sortdata[$sortby]);
             }
             $sortdata = array_merge([$sortby => $sortorder], $sortdata);
         }
@@ -1445,22 +1444,18 @@ class flexible_table {
             }
         }
 
-        // Now, update the column attributes for collapsed columns
-        foreach (array_keys($this->columns) as $column) {
-            if (!empty($this->prefs['collapse'][$column])) {
-                $this->column_style[$column]['width'] = '10px';
-            }
-        }
-
-        // Now, update the column attributes for collapsed columns
-        foreach (array_keys($this->columns) as $column) {
-            if (!empty($this->prefs['collapse'][$column])) {
-                $this->column_style[$column]['width'] = '10px';
-            }
-        }
-
+        $this->set_hide_show_preferences();
         $this->set_sorting_preferences();
         $this->set_initials_preferences();
+
+        // Now, reduce the width of collapsed columns and remove the width from columns that should be expanded.
+        foreach (array_keys($this->columns) as $column) {
+            if (!empty($this->prefs['collapse'][$column])) {
+                $this->column_style[$column]['width'] = '10px';
+            } else {
+                unset($this->column_style[$column]['width']);
+            }
+        }
 
         if (empty($this->baseurl)) {
             debugging('You should set baseurl when using flexible_table.');

@@ -133,10 +133,21 @@ const registerListenerEvents = (courseId, chooserConfig) => {
                 const sectionModal = buildModal(bodyPromise, footerData);
 
                 // Now we have a modal we should start fetching data.
-                const data = await fetchModuleData();
+                // If an error occurs while fetching the data, display the error within the modal.
+                const data = await fetchModuleData().catch(async(e) => {
+                    const errorTemplateData = {
+                        'errormessage': e.message
+                    };
+                    bodyPromiseResolver(await Templates.render('core_course/local/activitychooser/error', errorTemplateData));
+                });
+
+                // Early return if there is no module data.
+                if (!data) {
+                    return;
+                }
 
                 // Apply the section id to all the module instance links.
-                const builtModuleData = sectionIdMapper(data, caller.dataset.sectionid);
+                const builtModuleData = sectionIdMapper(data, caller.dataset.sectionid, caller.dataset.sectionreturnid);
 
                 ChooserDialogue.displayChooser(
                     sectionModal,
@@ -161,13 +172,14 @@ const registerListenerEvents = (courseId, chooserConfig) => {
  * @method sectionIdMapper
  * @param {Object} webServiceData Our original data from the Web service call
  * @param {Number} id The ID of the section we need to append to the links
+ * @param {Number|null} sectionreturnid The ID of the section return we need to append to the links
  * @return {Array} [modules] with URL's built
  */
-const sectionIdMapper = (webServiceData, id) => {
+const sectionIdMapper = (webServiceData, id, sectionreturnid) => {
     // We need to take a fresh deep copy of the original data as an object is a reference type.
     const newData = JSON.parse(JSON.stringify(webServiceData));
     newData.content_items.forEach((module) => {
-        module.link += '&section=' + id;
+        module.link += '&section=' + id + '&sr=' + (sectionreturnid ?? 0);
     });
     return newData.content_items;
 };

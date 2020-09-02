@@ -82,7 +82,7 @@ $string['awardoncron'] = 'Access to the badges was successfully enabled. Too man
 $string['awards'] = 'Recipients';
 $string['backpackavailability'] = 'External badge verification';
 $string['backpackconnectionok'] = 'Backpack connection successfully established';
-$string['backpackconnectionnottested'] = 'Connection can not be tested for this backpack because only OBv2.0 backpacks support it.';
+$string['backpackconnectionnottested'] = 'The connection cannot be tested for this backpack because only Open Badges v2.0 backpacks support it.';
 $string['backpackneedsupdate'] = 'The backpack connected to this profile does not match the backpack for the site. You need to disconnect and reconnect the backpack.';
 $string['backpackavailability_help'] = 'For badge recipients to be able to prove they earned their badges from you, an external backpack service should be able to access your site and verify badges issued from it. Your site does not currently appear to be accessible, which means that badges you have already issued or will issue in the future cannot be verified.
 
@@ -304,7 +304,7 @@ $string['error:invalidexpiredate'] = 'Expiry date has to be in the future.';
 $string['error:invalidexpireperiod'] = 'Expiry period cannot be negative or equal 0.';
 $string['error:invalidparambadge'] = 'Badge does not exist. ';
 $string['error:noactivities'] = 'There are no activities with completion criteria enabled in this course.';
-$string['error:nobadges'] = 'There are no course or site badges with access enabled to be added as criteria.';
+$string['error:nobadges'] = 'There are currently no badges with access enabled to be added as criteria. A site badge can only have other site badges as criteria. A course badge can have other course badges or site badges as criteria.';
 $string['error:invalidparamcohort'] = 'Cohort does not exist. ';
 $string['error:noactivities'] = 'There are no activities with completion criteria enabled in this course.';
 $string['error:nocohorts'] = 'No cohorts';
