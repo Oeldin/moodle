@@ -2063,6 +2063,8 @@ function checkmark_supports($feature) {
             return true;
         case FEATURE_SHOW_DESCRIPTION:
             return true;
+        case FEATURE_MODEDIT_DEFAULT_COMPLETION:
+            return true;
         case FEATURE_MOD_ARCHETYPE:
             return MOD_ARCHETYPE_OTHER;
 
