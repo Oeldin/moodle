@@ -89,6 +89,8 @@ class mod_checkmark_mod_form extends moodleform_mod {
 
         $this->standard_coursemodule_elements();
 
+        $mform->setDefault('completion', COMPLETION_TRACKING_MANUAL);
+
         if ($this->submissioncount) {
             $mform->freeze('examplecount');
             $mform->addElement('hidden', 'allready_submit', 'yes');
