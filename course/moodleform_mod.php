@@ -659,7 +659,7 @@ abstract class moodleform_mod extends moodleform {
             $mform->addElement('hidden', 'completionunlocked', 0);
             $mform->setType('completionunlocked', PARAM_INT);
 
-            $trackingdefault = COMPLETION_TRACKING_NONE;
+            $trackingdefault = COMPLETION_TRACKING_MANUAL;
             // If system and activity default is on, set it.
             if ($CFG->completiondefault && $this->_features->defaultcompletion) {
                 $hasrules = plugin_supports('mod', $this->_modname, FEATURE_COMPLETION_HAS_RULES, true);
