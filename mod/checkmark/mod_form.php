@@ -87,8 +87,6 @@ class mod_checkmark_mod_form extends moodleform_mod {
 
         $this->standard_grading_coursemodule_elements();
 
-        $mform->setDefault('completion', COMPLETION_TRACKING_MANUAL);
-
         $this->standard_coursemodule_elements();
 
         if ($this->submissioncount) {
