@@ -2194,7 +2194,7 @@ function mod_checkmark_core_calendar_provide_event_action(calendar_event $event,
 
     require_once($CFG->dirroot . '/mod/checkmark/locallib.php');
 
-    if (!$userid) {
+    if (empty($userid)) {
         $userid = $USER->id;
     }
 
