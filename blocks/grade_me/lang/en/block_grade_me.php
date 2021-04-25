@@ -31,14 +31,15 @@ $string['link_user_profile'] = '{$a->first_name}\'s profile…';
 $string['alt_gradebook'] = 'Go to {$a->course_name} gradebook…';
 $string['alt_mod'] = 'Go to {$a->mod_name} in gradebook…';
 $string['alt_mark'] = 'check';
-$string['alt_smiley'] = 'smiley';
 
 $string['settings_maxcourses'] = 'Maximum Courses Displayed';
 $string['settings_configmaxcourses'] = 'Set the maximum number of ungraded courses to show. Setting this too high may impact performance.';
 $string['settings_adminviewall'] = 'Admins View All';
 $string['settings_configadminviewall'] = 'Enable to give administrators the rights to see all ungraded work — not just for courses where they have a grader role.';
+$string['settings_configshowhidden'] = 'Enable showing items to grade within hidden courses';
 $string['settings_enablepre'] = 'Show';
 $string['settings_configenablepre'] = 'Should Grade Me show unrated activity from the "{$a->plugin_name}" module?';
+$string['settings_showhidden'] = 'Hidden course items shown';
 
 $string['grade_me:addinstance'] = 'Add a new Grade Me block';
 $string['grade_me:myaddinstance'] = 'Add a new Grade Me block to the My Moodle page';

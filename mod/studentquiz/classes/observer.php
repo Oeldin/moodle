@@ -24,6 +24,7 @@
 
 use mod_studentquiz\event\studentquiz_digest_changed;
 use mod_studentquiz\utils;
+use mod_studentquiz\access\context_override;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -37,7 +38,7 @@ defined('MOODLE_INTERNAL') || die();
 class mod_studentquiz_observer {
 
     /**
-     * Observer for the even question_created - Create new record for studentquiz_questions table.
+     * Observer for the event question_created - Create new record for studentquiz_questions table.
      *
      * @param \core\event\question_created $event
      * @throws moodle_exception
@@ -58,7 +59,7 @@ class mod_studentquiz_observer {
     }
 
     /**
-     * Observer for the even question_moved - Create new record for studentquiz_questions table.
+     * Observer for the event question_moved - Create new record for studentquiz_questions table.
      *
      * @param \core\event\question_moved $event
      * @throws coding_exception
@@ -85,7 +86,7 @@ class mod_studentquiz_observer {
     }
 
     /**
-     * Observer for the even studentquiz_digest_changed
+     * Observer for the event studentquiz_digest_changed.
      *
      * @param studentquiz_digest_changed $event
      */
@@ -95,19 +96,82 @@ class mod_studentquiz_observer {
         date_default_timezone_set('UTC');
         $olddigesttype = $event->other['olddigesttype'];
 
-        if ($olddigesttype == utils::DAILY_DIGEST_TYPE) {
-            $timetosend = strtotime(date('Y-m-d'));
-        } else if ($olddigesttype == utils::WEEKLY_DIGEST_TYPE) {
-            $digestfirstday = $event->other['olddigestfirstday'];
-            $timetosend = utils::calculcate_notification_time_to_send($digestfirstday);
-        }
-        $DB->execute('UPDATE {studentquiz_notification}
+        if ($olddigesttype != utils::NO_DIGEST_TYPE) {
+            if ($olddigesttype == utils::DAILY_DIGEST_TYPE) {
+                $timetosend = strtotime(date('Y-m-d'));
+            } else if ($olddigesttype == utils::WEEKLY_DIGEST_TYPE) {
+                $digestfirstday = $event->other['olddigestfirstday'];
+                $timetosend = utils::calculcate_notification_time_to_send($digestfirstday);
+            }
+            $DB->execute('UPDATE {studentquiz_notification}
                               SET timetosend = :newtimetosend
                             WHERE studentquizid = :studentquizid
                                   AND timetosend = :oldtimetosend
                                   AND status = :status',
-                ['newtimetosend' => strtotime('-1 day', date('Y-m-d')), 'studentquizid' => $event->objectid,
-                        'oldtimetosend' => $timetosend, 'status' => 0]);
+                    ['newtimetosend' => strtotime('-1 day', mktime(0, 0, 0)),
+                            'studentquizid' => $event->objectid,
+                            'oldtimetosend' => $timetosend, 'status' => 0]);
+        }
     }
 
+    /**
+     * Observer for the event \core\event\capability_assigned. Updates context specific capability overrides
+     * if needed.
+     *
+     * @param \core\event\capability_assigned $event
+     */
+    public static function capability_assigned(\core\event\capability_assigned $event) {
+        if (self::is_studentquiz_capability($event->other['capability'])) {
+            context_override::roles_setup_has_changed();
+        }
+    }
+
+    /**
+     * Observer for the event \core\event\capability_unassigned. Updates context specific capability overrides
+     * if needed.
+     *
+     * @param \core\event\capability_unassigned $event
+     */
+    public static function capability_unassigned(\core\event\capability_unassigned $event) {
+        if (self::is_studentquiz_capability($event->other['capability'])) {
+            context_override::roles_setup_has_changed();
+        }
+    }
+
+    /**
+     * Observer for the event \core\event\role_assigned. Update context specific capability overrides
+     * if needed.
+     *
+     * @param \core\event\role_assigned $event
+     */
+    public static function role_assigned(\core\event\role_assigned $event) {
+        // TODO  If, in context_override::ensure_relation, we always synched persmissions for all roles,
+        // then we would not need to listen for role_assigned events. Worth considering.
+        context_override::roles_setup_has_changed();
+    }
+
+    /**
+     * Observer for the event \core\event\role_unassigned. Update context specific capability overrides
+     * if needed.
+     *
+     * @param \core\event\role_unassigned $event
+     */
+    public static function role_unassigned(\core\event\role_unassigned $event) {
+        // TODO  If, in context_override::ensure_relation, we always synched persmissions for all roles,
+        // then we would not need to listen for role_unassigned events. Worth considering.
+        context_override::roles_setup_has_changed();
+    }
+
+    /**
+     * Check if capability change affects StudentQuizzes
+     *
+     * @param string $capability
+     * @return bool
+     */
+    private static function is_studentquiz_capability($capability) {
+        return ((strpos($capability, "mod/studentquiz:") === 0));
+    }
+
+    // TODO we could add an extra check here, to see if the context of the event is a parent
+    // context of any StudenQuiz activities. That would take one DB query. Not sure if that is a good trade-off.
 }

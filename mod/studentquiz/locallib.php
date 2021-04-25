@@ -73,6 +73,7 @@ function mod_studentquiz_load_studentquiz($cmid, $contextid) {
             $context = \context::instance_by_id($contextid);
             $studentquiz->category = question_make_default_categories(array($context));
             $studentquiz->categoryid = $studentquiz->category->id;
+
             return $studentquiz;
         } else {
             return $studentquiz;
@@ -934,9 +935,11 @@ function mod_studentquiz_helper_attempt_stat_joins($excluderoles=array()) {
                                JOIN {context} con ON con.instanceid = sq.coursemodule
                                JOIN {question_categories} qc ON qc.contextid = con.id
                                JOIN {question} q ON q.category = qc.id
+                               JOIN {studentquiz_question} sqq ON q.id = sqq.questionid
                           LEFT JOIN {studentquiz_rate} sqv ON q.id = sqv.questionid
                               WHERE q.hidden = 0
                                     AND q.parent = 0
+                                    AND sqq.hidden = 0
                                     AND sq.coursemodule = :cmid6
                            GROUP BY q.id, q.createdby
                            ) avgratingperquestion
@@ -979,15 +982,23 @@ function mod_studentquiz_helper_attempt_stat_joins($excluderoles=array()) {
  * @return array question types with identifier as key and name as value
  */
 function mod_studentquiz_get_question_types() {
-    $types = question_bank::get_creatable_qtypes();
     $returntypes = array();
-    // Don't allow Question type essay anymore.
-    unset($types["essay"]);
+    $types = question_bank::get_creatable_qtypes();
+
+    // Filter out question types which can't be graded automatically.
+    foreach ($types as $name => $qtype) {
+        if (!$qtype->is_real_question_type() || $qtype->is_manual_graded()) {
+            unset($types[$name]);
+        }
+    }
+
+    // Get the translated name for displaying purposes.
     foreach ($types as $name => $qtype) {
         if ($name != 'randomsamatch') {
             $returntypes[$name] = $qtype->local_name();
         }
     }
+
     return $returntypes;
 }
 
@@ -1012,81 +1023,6 @@ function mod_studentquiz_get_roles() {
         $return[$role->id] = $role->localname;
     }
     return $return;
-}
-
-/**
- * Add capabilities to teacher (Non editing teacher) and
- * Student roles in the context of this context
- *
- * @param context $context of the studentquiz activity
- */
-function mod_studentquiz_ensure_question_capabilities($context) {
-    global $CFG;
-
-    $neededcapabilities = [
-            'mod/studentquiz:view' => [
-                    'moodle/question:useall'
-            ],
-            'mod/studentquiz:submit' => [
-                    'moodle/question:add',
-                    'moodle/question:viewmine',
-                    'moodle/question:editmine'
-            ],
-            'mod/studentquiz:previewothers' => [
-                    'moodle/question:viewall',
-                    'moodle/question:editall'
-            ],
-            'mod/studentquiz:manage' => [
-                    'moodle/question:add',
-                    'moodle/question:viewall',
-                    'moodle/question:editall'
-            ]
-    ];
-
-    $studentquizcapabilities = array_keys($neededcapabilities);
-
-    $extracapabilities = [];
-    $capabiltiesneededbyeachrole = [];
-    if ($CFG->version >= 2018051700) { // Moodle 3.5+.
-        $extracapabilities[] = 'moodle/question:tagmine';
-    }
-
-    foreach ($studentquizcapabilities as $studentquizcapability) {
-        // Get the ids of all the roles that related to given capability.
-        list($roleids) = get_roles_with_cap_in_context($context, $studentquizcapability);
-        foreach ($roleids as $roleid) {
-            if (!array_key_exists($roleid, $capabiltiesneededbyeachrole)) {
-                $capabiltiesneededbyeachrole[$roleid] = $neededcapabilities[$studentquizcapability];
-            } else {
-                $capabiltiesneededbyeachrole[$roleid] =
-                        array_merge($capabiltiesneededbyeachrole[$roleid], $neededcapabilities[$studentquizcapability]);
-            }
-        }
-    }
-
-    foreach ($capabiltiesneededbyeachrole as $roleid => $questioncapabilites) {
-        $capabilitieswithall  = preg_grep('/all$/', $questioncapabilites);
-        foreach ($capabilitieswithall as $capabilitiy) {
-            $capabilitieswithmine = preg_replace('/all$/', 'mine', $capabilitiy);
-            if (in_array($capabilitieswithmine, $questioncapabilites)) {
-                // Remove the 'mine' if we have 'all' capability.
-                $deletekey = array_search($capabilitieswithmine, $capabiltiesneededbyeachrole[$roleid]);
-                unset($capabiltiesneededbyeachrole[$roleid][$deletekey]);
-            }
-        }
-    }
-
-    foreach ($capabiltiesneededbyeachrole as $roleid => $questioncapabilites) {
-        // Include the extra capabilities if needed.
-        if (!empty($extracapabilities)) {
-            $questioncapabilites = array_merge($questioncapabilites, $extracapabilities);
-        }
-        // If needed, add an override for each question capability.
-        foreach ($questioncapabilites as $capability) {
-            // This function only creates an override if needed.
-            role_change_permission($roleid, $context, $capability, CAP_ALLOW);
-        }
-    }
 }
 
 /**

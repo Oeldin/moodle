@@ -46,15 +46,21 @@ require_login($module->course, false, $module);
 
 // Load context.
 $context = context_module::instance($module->id);
+
+// Check to see if any roles setup has been changed since we last synced the capabilities.
+\mod_studentquiz\access\context_override::ensure_permissions_are_right($context);
+
 $studentquiz = mod_studentquiz_load_studentquiz($module->id, $context->id);
 
 // Lookup question.
 try {
     $question = question_bank::load_question($questionid);
-    // There is no capability check on previewothers, because he can gotten the link for review by notification.
-    // If this should be limited also here, you need to implement some sort of onetime token for the link in the notification.
+    // A user can view this page if it is his question or he is allowed to view others questions.
+    if ($question->createdby != $USER->id) {
+        require_capability('mod/studentquiz:previewothers', $context);
+    }
 
-    // But we have to check if the question is really from this module, limit questions to categories used in this module.
+    // We have to check if the question is really from this module, limit questions to categories used in this module.
     $allowedcategories = question_categorylist($studentquiz->categoryid);
     if (!in_array($question->category, $allowedcategories)) {
         $question = null;
@@ -115,6 +121,7 @@ if ($question) {
     }
 
     $options = new question_display_options();
+    $options->flags = question_display_options::EDITABLE;
 
     // Output.
     $title = get_string('previewquestion', 'question', format_string($question->name));

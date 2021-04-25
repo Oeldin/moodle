@@ -98,7 +98,7 @@ class mod_studentquiz_renderer extends plugin_renderer_base {
             $bc->attributes['id'] = 'mod_studentquiz_statblock';
             $bc->attributes['role'] = 'navigation';
             $bc->attributes['aria-labelledby'] = 'mod_studentquiz_navblock_title';
-            $bc->title = html_writer::span(get_string('statistic_block_title', 'studentquiz'));
+            $bc->title = get_string('statistic_block_title', 'studentquiz');
             $bc->content = get_string('please_enrole_message', 'studentquiz');
             return $bc;
         }
@@ -106,7 +106,7 @@ class mod_studentquiz_renderer extends plugin_renderer_base {
         $bc->attributes['id'] = 'mod_studentquiz_statblock';
         $bc->attributes['role'] = 'navigation';
         $bc->attributes['aria-labelledby'] = 'mod_studentquiz_navblock_title';
-        $bc->title = html_writer::span(get_string('statistic_block_title', 'studentquiz'));
+        $bc->title = get_string('statistic_block_title', 'studentquiz');
         $info1 = new stdClass();
         $info1->total = $sqstats->questions_available;
         $info1->group = $userstats->last_attempt_exists;
@@ -189,7 +189,7 @@ class mod_studentquiz_renderer extends plugin_renderer_base {
         $bc->attributes['id'] = 'mod_studentquiz_rankingblock';
         $bc->attributes['role'] = 'navigation';
         $bc->attributes['aria-labelledby'] = 'mod_studentquiz_navblock_title';
-        $bc->title = html_writer::span($blocktitle);
+        $bc->title = $blocktitle;
         $bc->content = implode('', $rows);
 
         // Add More link to Ranking block.
@@ -942,7 +942,7 @@ class mod_studentquiz_overview_renderer extends mod_studentquiz_renderer {
      */
     public function render_select_qtype_form($view) {
         return $view->get_questionbank()->create_new_question_form($view->get_category_id(),
-                has_capability('moodle/question:add', $view->get_context()));
+                has_capability('mod/studentquiz:submit', $view->get_context()));
     }
 
     /**
@@ -1147,7 +1147,7 @@ EOT;
     public function render_control_buttons($catcontext, $hasquestionincategory, $addcontexts, $category) {
         $output = '';
         $caneditall = has_capability('mod/studentquiz:manage', $catcontext);
-        $canmoveall = has_capability('mod/studentquiz:manage', $catcontext);
+        $canmoveall = has_capability('mod/studentquiz:organize', $catcontext);
 
         $output .= html_writer::start_div('modulespecificbuttonscontainer');
         $output .= html_writer::tag('strong', '&nbsp;' . get_string('withselected', 'question') . ':');
@@ -1499,7 +1499,7 @@ class mod_studentquiz_attempt_renderer extends mod_studentquiz_renderer {
      * @throws dml_exception
      */
     public function render_rate($questionid, $forcerating = true) {
-        global $DB, $USER, $PAGE;
+        global $DB, $USER;
 
         $question = question_bank::load_question($questionid);
         if (!utils::allow_self_comment_and_rating_in_preview_mode($question, $this->page->cm->id)) {
@@ -1549,7 +1549,7 @@ class mod_studentquiz_attempt_renderer extends mod_studentquiz_renderer {
      */
     public function render_state_choice($questionid, $courseid, $cmid) {
         $output = '';
-        if (has_capability('mod/studentquiz:previewothers', $this->page->context)) {
+        if (has_capability('mod/studentquiz:changestate', $this->page->context)) {
             $states = [
                     studentquiz_helper::STATE_DISAPPROVED => get_string('state_disapproved', 'studentquiz'),
                     studentquiz_helper::STATE_APPROVED => get_string('state_approved', 'studentquiz'),
@@ -1575,11 +1575,9 @@ class mod_studentquiz_attempt_renderer extends mod_studentquiz_renderer {
      * @param bool $hasprevious
      * @param bool $hasnext
      * @param bool $hasanswered
-     * @param bool $canfinish
      * @return string
      */
-    public function render_navigation_bar($hasprevious, $hasnext, $hasanswered, $canfinish) {
-
+    public function render_navigation_bar($hasprevious, $hasnext, $hasanswered) {
         $col1content = '&nbsp;';
         if ($hasprevious) {
             $col1content = html_writer::empty_tag('input', [
@@ -1592,9 +1590,10 @@ class mod_studentquiz_attempt_renderer extends mod_studentquiz_renderer {
 
         $content1 = html_writer::div(html_writer::div($col1content, 'pull-left'), 'col-md-4');
 
-        // Not has rated, is done using javascript.
+        // The abort button can always be shown, except when the question has been answered and it is the last question
+        // in the list.
         $col2content = '';
-        if ($canfinish && ($hasnext || !$hasanswered)) {
+        if ($hasnext || !$hasanswered) {
             $col2content .= html_writer::empty_tag('input', [
                     'type' => 'submit', 'name' => 'finish',
                     'value' => get_string('abort_button', 'studentquiz'),

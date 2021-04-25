@@ -35,13 +35,22 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
         },
 
         init: function() {
-            var stateChangeSelect = $(t.SELECTOR.STATE_SELECT);
-            var changeStateButton = $(t.SELECTOR.CHANGE_STATE_BUTTON);
-            var stateValueInput = $(t.SELECTOR.STATE_VALUE_INPUT);
-            var submitStateButton = $(t.SELECTOR.SUBMIT_STATE_BUTTON);
-            var lastSelectedState = stateChangeSelect.val();
 
-            stateChangeSelect.on('change', function() {
+            var lastSelectedState = $(t.SELECTOR.STATE_SELECT).val();
+
+            // TODO: Something rerenders or manipulates the modal elements, so the event has to be attached to the
+            // document - see #278. Better would be using the dialog framework similiar to the comment_area instead of
+            // putting the dialog together manually in the renderer functions.
+            $(document).on('change', t.SELECTOR.STATE_SELECT, {}, function() {
+                // Since it happens that the modal elements gets rerendered or manipulated in some way, the elements
+                // need to be obtained freshly.
+                var stateChangeSelect = $(t.SELECTOR.STATE_SELECT);
+                var changeStateButton = $(t.SELECTOR.CHANGE_STATE_BUTTON);
+                var stateValueInput = $(t.SELECTOR.STATE_VALUE_INPUT);
+                var submitStateButton = $(t.SELECTOR.SUBMIT_STATE_BUTTON);
+
+                // TODO: None of the render functions preselect the current active option so lastSelectedState is
+                // basically always the first option, whose value is '' as well.
                 if (stateChangeSelect.val() !== '' && stateChangeSelect.val() !== lastSelectedState) {
                     stateValueInput.val(stateChangeSelect.val());
                     changeStateButton.removeAttr('disabled');
@@ -52,7 +61,12 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
                 }
             });
 
-            submitStateButton.on('click', function() {
+            $(document).on('click', t.SELECTOR.SUBMIT_STATE_BUTTON, {}, function() {
+                // Since it happens that the modal elements gets rerendered or manipulated in some way, the elements
+                // need to be obtained freshly.
+                var stateChangeSelect = $(t.SELECTOR.STATE_SELECT);
+                var submitStateButton = $(t.SELECTOR.SUBMIT_STATE_BUTTON);
+
                 submitStateButton.attr('disabled', 'disabled');
                 var pendingPromise = t.addPendingJSPromise('studentquizStateChange');
                 require(['core/loadingicon'], function(LoadingIcon) {

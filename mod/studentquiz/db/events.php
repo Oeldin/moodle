@@ -28,14 +28,23 @@ defined('MOODLE_INTERNAL') || die();
 $observers = [
         [
                 'eventname' => '\core\event\question_created',
-                'callback' => 'mod_studentquiz_observer::question_created'
+                'callback' => 'mod_studentquiz_observer::question_created',
         ],
         [
                 'eventname' => '\core\event\question_moved',
-                'callback' => 'mod_studentquiz_observer::question_moved'
+                'callback' => 'mod_studentquiz_observer::question_moved',
         ],
         [
                 'eventname' => '\mod_studentquiz\event\studentquiz_digest_changed',
-                'callback' => 'mod_studentquiz_observer::digest_changed'
-        ]
+                'callback' => 'mod_studentquiz_observer::digest_changed',
+        ],
+        [
+                'eventname' => '\core\event\capability_assigned',
+                'callback' => 'mod_studentquiz_observer::capability_assigned',
+        ],
+        [
+                'eventname' => '\core\event\capability_unassigned',
+                'callback' => 'mod_studentquiz_observer::capability_unassigned',
+        ],
+        // I assume course_module_deleted removes anyway all capability overrides, so not added here.
 ];
