@@ -24,20 +24,21 @@ require_once($CFG->dirroot . '/question/type/geogebra/edit_geogebra_form.php');
  * @copyright  (c) International GeoGebra Institute 2014
  * @license        http://www.geogebra.org/license
  */
-class qtype_geogebra_test extends advanced_testcase {
+class questiontype_test extends advanced_testcase {
+
     public static $includecoverage = array(
-            'question/type/questiontypebase.php',
-            'question/type/geogebra/questiontype.php'
+        'question/type/questiontypebase.php',
+        'question/type/geogebra/questiontype.php'
     );
 
     /** @var qtype_geogebra The questiontype object */
     protected $qtype;
 
-    protected function setUp() {
+    protected function setUp(): void {
         $this->qtype = new qtype_geogebra();
     }
 
-    protected function tearDown() {
+    protected function tearDown(): void {
         $this->qtype = null;
     }
 
@@ -49,18 +50,18 @@ class qtype_geogebra_test extends advanced_testcase {
         $q->id = 1;
         $q->options = new stdClass();
         $q->options->answers[13] = (object)array(
-                'id'             => 13,
-                'answer'         => 'e',
-                'fraction'       => 1,
-                'feedback'       => 'yes',
-                'feedbackformat' => FORMAT_MOODLE,
+            'id'             => 13,
+            'answer'         => 'e',
+            'fraction'       => 1,
+            'feedback'       => 'yes',
+            'feedbackformat' => FORMAT_MOODLE,
         );
         $q->options->answers[14] = (object)array(
-                'id'             => 14,
-                'answer'         => 'e1',
-                'fraction'       => 0.5,
-                'feedback'       => 'yes',
-                'feedbackformat' => FORMAT_MOODLE,
+            'id'             => 14,
+            'answer'         => 'e1',
+            'fraction'       => 0.5,
+            'feedback'       => 'yes',
+            'feedbackformat' => FORMAT_MOODLE,
         );
 
         return $q;
@@ -87,13 +88,13 @@ class qtype_geogebra_test extends advanced_testcase {
         $q = $this->get_test_question_data();
 
         $this->assertEquals(array(
-                $q->id => array(
-                        3    => new question_possible_response('e=true, e1=true', 1),
-                        2    => new question_possible_response('e=true, e1=false', 1),
-                        1    => new question_possible_response('e=false, e1=true', 0.5),
-                        0    => new question_possible_response('e=false, e1=false', 0),
-                        null => question_possible_response::no_response()
-                ),
+            $q->id => array(
+                3    => new question_possible_response('e=true, e1=true', 1),
+                2    => new question_possible_response('e=true, e1=false', 1),
+                1    => new question_possible_response('e=false, e1=true', 0.5),
+                0    => new question_possible_response('e=false, e1=false', 0),
+                null => question_possible_response::no_response()
+            ),
         ), $this->qtype->get_possible_responses($q));
     }
 
@@ -123,13 +124,13 @@ class qtype_geogebra_test extends advanced_testcase {
 
         foreach ($questiondata as $property => $value) {
             if (!in_array($property, array('options'))) {
-                $this->assertAttributeEquals($value, $property, $actualquestiondata);
+                $this->assertEquals($value, $actualquestiondata->{$property});
             }
         }
 
         foreach ($questiondata->options as $optionname => $value) {
             if (!in_array($optionname, array('answers'))) {
-                $this->assertAttributeEquals($value, $optionname, $actualquestiondata->options);
+                $this->assertEquals($value, $actualquestiondata->options->{$optionname});
             }
         }
 
@@ -138,7 +139,7 @@ class qtype_geogebra_test extends advanced_testcase {
             foreach ($answer as $ansproperty => $ansvalue) {
                 // This question does not use 'answerformat', will ignore it.
                 if (!in_array($ansproperty, array('id', 'question', 'answerformat'))) {
-                    $this->assertAttributeEquals($ansvalue, $ansproperty, $actualanswer);
+                    $this->assertEquals($ansvalue, $actualanswer->{$ansproperty});
                 }
             }
         }

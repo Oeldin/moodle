@@ -79,6 +79,7 @@ class controller {
         $course_fullnames = $course_repo->get_course_fullnames_by_sharing_carts($records);
 
         $records = array_values($records);
+        $records = $this->attach_uninstall_attribute($records);
 
         $tree = [];
         foreach ($records as $record) {
@@ -182,7 +183,7 @@ class controller {
      *  Backup a module into Sharing Cart
      *
      * @param int $cmid
-     * @param boolean $userdata
+     * @param boolean $has_userdata
      * @param int $course
      * @param int $section
      * @return int
@@ -191,7 +192,7 @@ class controller {
      * @global \moodle_database $DB
      * @global object $USER
      */
-    public function backup($cmid, $userdata, $course, $section = 0) {
+    public function backup($cmid, $has_userdata, $course, $section = 0) {
         global $CFG, $DB, $USER;
 
         if (module::has_backup($cmid, $course) === false) {
@@ -205,10 +206,8 @@ class controller {
         $cm = \get_coursemodule_from_id(null, $cmid, 0, false, MUST_EXIST);
         $context = \context_module::instance($cm->id);
         \require_capability('moodle/backup:backupactivity', $context);
-        if ($userdata) {
+        if ($has_userdata) {
             \require_capability('moodle/backup:userinfo', $context);
-            \require_capability('moodle/backup:anonymise', $context);
-            \require_capability('moodle/restore:userinfo', $context);
         }
         self::validate_sesskey();
 
@@ -220,7 +219,7 @@ class controller {
         // backup the module into the predefined area
         //    - user/backup ... if userdata not included
         //    - backup/activity ... if userdata included
-        $settings = array(
+        $settings = [
                 'role_assignments' => false,
                 'activities' => true,
                 'blocks' => false,
@@ -230,15 +229,14 @@ class controller {
                 'userscompletion' => false,
                 'logs' => false,
                 'grade_histories' => false,
-        );
-        if (\has_capability('moodle/backup:userinfo', $context) &&
-                \has_capability('moodle/backup:anonymise', $context) &&
-                \has_capability('moodle/restore:userinfo', $context)) {
-            // set the userdata flags only if the operator has capability
-            $settings += array(
-                    'users' => $userdata,
-                    'anonymize' => false,
-            );
+                'users' => false,
+                'anonymize' => false
+        ];
+        if ($has_userdata && \has_capability('moodle/backup:userinfo', $context)) {
+            $settings['users'] = true;
+        }
+        if (\has_capability('moodle/backup:anonymise', $context)) {
+            $settings['anonymize'] = true;
         }
         $controller = new backup_controller(
                 \backup::TYPE_1ACTIVITY,
@@ -287,6 +285,30 @@ class controller {
                 'section' => $section
         ));
         return $record->insert();
+    }
+
+    /**
+     * Backup an empty section
+     * 
+     * @param int $courseid
+     * @param int $sectionid
+     * @return int New item ID
+     */
+    public function backup_emptysection($courseid, $sectionid) {
+        global $DB, $USER;
+        $newitem = new stdClass();
+        $newitem->id = 0;
+        $newitem->userid = $USER->id;
+        $newitem->modname = '';
+        $newitem->modicon = '';
+        $newitem->modtext = '';
+        $newitem->ctime = time();
+        $newitem->filename = '';
+        $newitem->tree = '';
+        $newitem->weight = 0;
+        $newitem->course = $courseid;
+        $newitem->section = $sectionid;
+        return $DB->insert_record('block_sharing_cart', $newitem);
     }
 
     /**
@@ -360,18 +382,24 @@ class controller {
             }
 
             // Fixed ISSUE-12 - https://github.com/donhinkelman/moodle-block_sharing_cart/issues/12
-            foreach ($modules as $module) {
-                if ((isset($module->deletioninprogress)
-                        && $module->deletioninprogress) === 1
-                        || module::has_backup($module->id) === false) {
-                    continue;
+            // Issue-83 (solution) copying empty section: create an empty module in cart to make the folder path to be visible in cart
+            //    so an empty folder can be rendered.
+            if (count($modules)) {
+                foreach ($modules as $module) {
+                    if ((isset($module->deletioninprogress)
+                            && $module->deletioninprogress) === 1
+                            || module::has_backup($module->id) === false) {
+                        continue;
+                    }
+    
+                    if ($userdata && $this->is_userdata_copyable($module->id)) {
+                        $itemids[] = $this->backup($module->id, true, $course, $sc_section_id);
+                    } else {
+                        $itemids[] = $this->backup($module->id, false, $course, $sc_section_id);
+                    }
                 }
-
-                if ($userdata && $this->is_userdata_copyable($module->id)) {
-                    $itemids[] = $this->backup($module->id, true, $course, $sc_section_id);
-                } else {
-                    $itemids[] = $this->backup($module->id, false, $course, $sc_section_id);
-                }
+            } else {
+                $itemids[] = $this->backup_emptysection($course, $sc_section_id);
             }
 
             // Check empty folder name
@@ -529,8 +557,11 @@ class controller {
     public function restore_directory($path, $courseid, $sectionnumber, $overwritesectionid) {
         global $DB, $USER;
 
-        $cart_items = $DB->get_records("block_sharing_cart", ['tree' => $path, 'userid' => $USER->id], "weight ASC", "id");
+        $cart_items = $DB->get_records('block_sharing_cart', ['tree' => $path, 'userid' => $USER->id], 'weight ASC');
         foreach ($cart_items as $cart_item) {
+            if (!$cart_item->modname) { // issue-83 skip restoring empty item
+                continue;
+            }
             $this->restore($cart_item->id, $courseid, $sectionnumber);
         }
 
@@ -827,5 +858,24 @@ class controller {
                         'has_backup_routine' => module::has_backup($cmid, $courseid)
                 ),
         ));
+    }
+
+    /**
+     * @param stdClass[] $records
+     * @return stdClass[]
+     * @throws \ddl_exception
+     */
+    public function attach_uninstall_attribute($records) {
+        global $DB;
+
+        foreach ($records as $record) {
+            $record->uninstalled_plugin = true;
+
+            if ($DB->get_field('modules', 'id', ['name' => $record->modname])) {
+                $record->uninstalled_plugin = false;
+            }
+        }
+
+        return $records;
     }
 }
